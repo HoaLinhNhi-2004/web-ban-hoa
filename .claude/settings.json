@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/dangerous-actions-blocker.ps1"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/output-secrets-scanner.ps1"
+      }
+    ]
+  }
+}
