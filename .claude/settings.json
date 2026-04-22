@@ -1,16 +1,14 @@
 {
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/dangerous-actions-blocker.ps1"
-      }
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx *)",
+      "Bash(mkdir *)",
+      "Bash(touch *)"
     ],
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "command": "powershell -ExecutionPolicy Bypass -File .claude/hooks/output-secrets-scanner.ps1"
-      }
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)"
     ]
   }
 }
