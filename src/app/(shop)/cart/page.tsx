@@ -1,23 +1,32 @@
 'use client'
 
-import { type FC } from 'react'
+import { type FC, useState } from 'react'
 import Link from 'next/link'
-import { ShoppingBag, ArrowRight, ArrowLeft, Trash2 } from 'lucide-react'
+import { ShoppingBag, ArrowLeft, Trash2 } from 'lucide-react'
 import { formatPrice } from '@/lib/utils'
 import { useCartStore } from '@/store/cartStore'
 import CartItem from '@/components/cart/CartItem'
+import PromoInput, { type PromoResult } from '@/components/cart/PromoInput'
+import ShippingCalculator, { type ShippingResult } from '@/components/cart/ShippingCalculator'
 
-const SHIPPING_THRESHOLD = 500000 // miễn ship đơn trên 500k
+const DEFAULT_SHIPPING: ShippingResult = { name: 'Nội thành TP.HCM', fee: 30000 }
 
 const CartPage: FC = () => {
-  const items    = useCartStore(state => state.items)
-  const total    = useCartStore(state => state.total)
+  const items     = useCartStore(state => state.items)
+  const total     = useCartStore(state => state.total)
   const clearCart = useCartStore(state => state.clearCart)
 
-  const subtotal       = total()
-  const shippingFee    = subtotal >= SHIPPING_THRESHOLD ? 0 : 30000
-  const grandTotal     = subtotal + shippingFee
-  const remainForFree  = SHIPPING_THRESHOLD - subtotal
+  const [shipping,  setShipping]  = useState<ShippingResult>(DEFAULT_SHIPPING)
+  const [discount,  setDiscount]  = useState(0)
+  const [promoCode, setPromoCode] = useState<string | null>(null)
+
+  const subtotal   = total()
+  const grandTotal = subtotal + shipping.fee - discount
+
+  const handlePromo = (result: PromoResult | null) => {
+    setDiscount(result?.discount ?? 0)
+    setPromoCode(result?.code ?? null)
+  }
 
   if (items.length === 0) {
     return (
@@ -50,8 +59,9 @@ const CartPage: FC = () => {
         </h1>
         <button
           onClick={clearCart}
+          suppressHydrationWarning
           aria-label="Xóa toàn bộ giỏ hàng"
-          className="flex items-center gap-1.5 text-sm text-muted hover:text-danger transition-colors"
+          className="flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-danger"
         >
           <Trash2 className="h-4 w-4" /> Xóa tất cả
         </button>
@@ -60,34 +70,6 @@ const CartPage: FC = () => {
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Danh sách sản phẩm */}
         <div className="lg:col-span-2">
-          {/* Miễn phí ship */}
-          {remainForFree > 0 && (
-            <div className="mb-6 rounded-xl border border-secondary bg-[#FFF5F7] px-4 py-3">
-              <p className="text-sm text-text">
-                Mua thêm{' '}
-                <strong className="text-primary">{formatPrice(remainForFree)}</strong>
-                {' '}để được{' '}
-                <strong className="text-primary">miễn phí giao hàng</strong> 🎉
-              </p>
-              {/* Progress bar */}
-              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-                <div
-                  className="h-full rounded-full bg-primary transition-all duration-500"
-                  style={{ width: `${Math.min((subtotal / SHIPPING_THRESHOLD) * 100, 100)}%` }}
-                />
-              </div>
-            </div>
-          )}
-
-          {remainForFree <= 0 && (
-            <div className="mb-6 rounded-xl border border-green-100 bg-green-50 px-4 py-3">
-              <p className="text-sm font-medium text-success">
-                ✅ Bạn được miễn phí giao hàng!
-              </p>
-            </div>
-          )}
-
-          {/* Cart items */}
           <ul className="flex flex-col divide-y divide-border rounded-2xl border border-border bg-surface">
             {items.map(item => (
               <li key={item.product.id} className="p-4 sm:p-6">
@@ -96,10 +78,9 @@ const CartPage: FC = () => {
             ))}
           </ul>
 
-          {/* Continue shopping */}
           <Link
             href="/products"
-            className="mt-4 inline-flex items-center gap-1.5 text-sm text-muted hover:text-primary transition-colors"
+            className="mt-4 inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-primary"
           >
             <ArrowLeft className="h-4 w-4" /> Tiếp tục mua sắm
           </Link>
@@ -107,54 +88,67 @@ const CartPage: FC = () => {
 
         {/* Order summary */}
         <div className="lg:col-span-1">
-          <div className="sticky top-24 rounded-2xl border border-border bg-surface p-6 space-y-4">
-            <h2 className="font-display text-xl font-bold text-text">
+          <div className="sticky top-24 space-y-5 rounded-none border border-[rgba(195,130,120,0.18)] bg-surface p-6">
+            <h2 className="font-display text-xl font-light text-[#1E1714]">
               Tóm tắt đơn hàng
             </h2>
 
-            <div className="space-y-3 border-b border-border pb-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted">Tạm tính</span>
-                <span className="font-medium">{formatPrice(subtotal)}</span>
+            {/* Khu vực giao hàng */}
+            <div className="space-y-2 border-b border-[rgba(195,130,120,0.12)] pb-5">
+              <p className="font-sans text-[9px] uppercase tracking-[3px] text-[rgba(30,23,20,0.35)]">
+                Khu vực giao hàng
+              </p>
+              <ShippingCalculator current={shipping} onSelect={setShipping} />
+            </div>
+
+            {/* Mã giảm giá */}
+            <div className="space-y-2 border-b border-[rgba(195,130,120,0.12)] pb-5">
+              <p className="font-sans text-[9px] uppercase tracking-[3px] text-[rgba(30,23,20,0.35)]">
+                Mã giảm giá
+              </p>
+              <PromoInput subtotal={subtotal} onApply={handlePromo} />
+            </div>
+
+            {/* Chi tiết giá */}
+            <div className="space-y-3">
+              <div className="flex justify-between font-sans text-sm">
+                <span className="text-[rgba(30,23,20,0.5)]">Tạm tính</span>
+                <span className="text-[#1E1714]">{formatPrice(subtotal)}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted">Phí giao hàng</span>
-                {shippingFee === 0 ? (
-                  <span className="font-medium text-success">Miễn phí</span>
-                ) : (
-                  <span className="font-medium">{formatPrice(shippingFee)}</span>
-                )}
+              <div className="flex justify-between font-sans text-sm">
+                <span className="text-[rgba(30,23,20,0.5)]">
+                  Phí giao hàng ({shipping.name})
+                </span>
+                <span className="text-[#1E1714]">
+                  {shipping.fee === 0 ? 'Miễn phí' : formatPrice(shipping.fee)}
+                </span>
               </div>
+              {discount > 0 && (
+                <div className="flex justify-between font-sans text-sm">
+                  <span className="text-green-600">
+                    Giảm giá {promoCode && `(${promoCode})`}
+                  </span>
+                  <span className="font-medium text-green-600">
+                    -{formatPrice(discount)}
+                  </span>
+                </div>
+              )}
             </div>
 
-            <div className="flex justify-between font-bold text-lg">
-              <span>Tổng cộng</span>
-              <span className="text-accent">{formatPrice(grandTotal)}</span>
+            {/* Tổng */}
+            <div className="flex justify-between border-t border-[rgba(195,130,120,0.15)] pt-4">
+              <span className="font-display text-lg text-[#1E1714]">Tổng cộng</span>
+              <span className="font-display text-xl text-[#A85448]">{formatPrice(grandTotal)}</span>
             </div>
 
-            {/* Promo code */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Mã giảm giá"
-                aria-label="Nhập mã giảm giá"
-                className="input-field flex-1"
-              />
-              <button className="btn-secondary px-4 text-sm">
-                Áp dụng
-              </button>
-            </div>
-
-            {/* Checkout button */}
             <Link
               href="/checkout"
-              className="btn-primary flex w-full items-center justify-center gap-2 py-3 text-base"
+              className="flex w-full items-center justify-center gap-2 bg-[#A85448] py-3.5 font-sans text-[10px] uppercase tracking-[3px] text-[#FAF8F5] transition-colors hover:bg-[#8B3D33]"
             >
-              Thanh toán <ArrowRight className="h-4 w-4" />
+              Thanh toán →
             </Link>
 
-            {/* Trust */}
-            <p className="text-center text-xs text-muted">
+            <p className="text-center font-sans text-[11px] text-[rgba(30,23,20,0.35)]">
               🔒 Thanh toán bảo mật · Đổi trả miễn phí trong 7 ngày
             </p>
           </div>

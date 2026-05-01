@@ -2,15 +2,7 @@
 
 import { type FC, useTransition } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { Search, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
-
-const SORT_OPTIONS = [
-  { value: 'newest',     label: 'Mới nhất'     },
-  { value: 'price_asc',  label: 'Giá tăng dần' },
-  { value: 'price_desc', label: 'Giá giảm dần' },
-  { value: 'name_asc',   label: 'Tên A → Z'    },
-]
+import { X } from 'lucide-react'
 
 interface ProductToolbarProps {
   total: number
@@ -20,64 +12,58 @@ const ProductToolbar: FC<ProductToolbarProps> = ({ total }) => {
   const router       = useRouter()
   const pathname     = usePathname()
   const searchParams = useSearchParams()
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
 
-  const currentSort   = searchParams.get('sort') ?? 'newest'
-  const currentSearch = searchParams.get('q') ?? ''
+  const currentCategory = searchParams.get('category') ?? ''
+  const currentSearch   = searchParams.get('q') ?? ''
+  const currentMinPrice = searchParams.get('min_price') ?? ''
+  const currentMaxPrice = searchParams.get('max_price') ?? ''
 
-  const updateParam = (key: string, value: string) => {
+  const removeParams = (...keys: string[]) => {
     const params = new URLSearchParams(searchParams.toString())
-    if (value) params.set(key, value)
-    else params.delete(key)
+    keys.forEach(k => params.delete(k))
     params.delete('page')
     startTransition(() => router.push(`${pathname}?${params.toString()}`))
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      {/* Search */}
-      <div className="relative flex-1 max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-        <input
-          type="search"
-          placeholder="Tìm kiếm hoa..."
-          aria-label="Tìm kiếm sản phẩm"
-          defaultValue={currentSearch}
-          onChange={e => updateParam('q', e.target.value)}
-          className={cn(
-            'input-field pl-9 pr-9',
-            isPending && 'opacity-60'
-          )}
-        />
+    <div className="flex items-center justify-between mb-4 min-h-7">
+      {/* Active filter tags */}
+      <div className="flex flex-wrap gap-2">
+        {currentCategory && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(168,84,72,0.08)] border border-[rgba(168,84,72,0.2)] text-[11px] text-[#A85448]">
+            {currentCategory}
+            <button onClick={() => removeParams('category')} aria-label="Xóa lọc danh mục" suppressHydrationWarning>
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        )}
         {currentSearch && (
-          <button
-            onClick={() => updateParam('q', '')}
-            aria-label="Xóa tìm kiếm"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-danger transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(168,84,72,0.08)] border border-[rgba(168,84,72,0.2)] text-[11px] text-[#A85448]">
+            &quot;{currentSearch}&quot;
+            <button onClick={() => removeParams('q')} aria-label="Xóa tìm kiếm" suppressHydrationWarning>
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        )}
+        {(currentMinPrice || currentMaxPrice) && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(168,84,72,0.08)] border border-[rgba(168,84,72,0.2)] text-[11px] text-[#A85448]">
+            {currentMinPrice && currentMaxPrice
+              ? `${Number(currentMinPrice).toLocaleString('vi-VN')} — ${Number(currentMaxPrice).toLocaleString('vi-VN')}đ`
+              : currentMinPrice
+                ? `Từ ${Number(currentMinPrice).toLocaleString('vi-VN')}đ`
+                : `Đến ${Number(currentMaxPrice).toLocaleString('vi-VN')}đ`}
+            <button onClick={() => removeParams('min_price', 'max_price')} aria-label="Xóa lọc giá" suppressHydrationWarning>
+              <X className="h-3 w-3" />
+            </button>
+          </span>
         )}
       </div>
 
-      {/* Right: total + sort */}
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-muted whitespace-nowrap">
-          {total} sản phẩm
-        </span>
-        <select
-          value={currentSort}
-          onChange={e => updateParam('sort', e.target.value)}
-          aria-label="Sắp xếp sản phẩm"
-          className="input-field w-auto cursor-pointer pr-8 text-sm"
-        >
-          {SORT_OPTIONS.map(opt => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* Số lượng kết quả */}
+      <span className="text-[11px] tracking-[2px] uppercase text-[rgba(30,23,20,0.35)] whitespace-nowrap">
+        {total} sản phẩm
+      </span>
     </div>
   )
 }

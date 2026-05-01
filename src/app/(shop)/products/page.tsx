@@ -14,80 +14,78 @@ export const metadata: Metadata = {
 }
 
 interface SearchParams {
-  category?: string
-  q?       : string
-  sort?    : string
-  page?    : string
+  category?  : string
+  q?         : string
+  sort?      : string
+  page?      : string
+  min_price? : string
+  max_price? : string
 }
 
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: SearchParams
+  searchParams: Promise<SearchParams>
 }) {
-  const supabase   = await createSupabaseServer()
-  const page       = Math.max(1, Number(searchParams.page ?? 1))
-  const category   = searchParams.category ?? ''
-  const search     = searchParams.q ?? ''
-  const sort       = searchParams.sort ?? 'newest'
-  const from       = (page - 1) * PRODUCTS_PER_PAGE
-  const to         = from + PRODUCTS_PER_PAGE - 1
+  const params    = await searchParams
+  const supabase  = await createSupabaseServer()
+  const page      = Math.max(1, Number(params.page ?? 1))
+  const category  = params.category  ?? ''
+  const search    = params.q         ?? ''
+  const sort      = params.sort      ?? 'newest'
+  const minPrice  = Number(params.min_price ?? 0) || 0
+  const maxPrice  = Number(params.max_price ?? 0) || 0
+  const from      = (page - 1) * PRODUCTS_PER_PAGE
+  const to        = from + PRODUCTS_PER_PAGE - 1
 
-  // Build query
-  let query = supabase.from('products').select('*', { count: 'exact' })
+  let query = supabase.from('products').select('*', { count: 'exact' }).gt('stock', 0)
 
   if (category) query = query.eq('category', category)
   if (search)   query = query.ilike('name', `%${search}%`)
+  if (minPrice) query = query.gte('price', minPrice)
+  if (maxPrice) query = query.lte('price', maxPrice)
 
-  // Sort
   switch (sort) {
-    case 'price_asc':  query = query.order('price', { ascending: true });  break
+    case 'price_asc' : query = query.order('price', { ascending: true });  break
     case 'price_desc': query = query.order('price', { ascending: false }); break
-    case 'name_asc':   query = query.order('name',  { ascending: true });  break
-    default:           query = query.order('created_at', { ascending: false })
+    case 'name_asc'  : query = query.order('name',  { ascending: true });  break
+    default          : query = query.order('created_at', { ascending: false })
   }
 
   query = query.range(from, to)
 
   const { data: products, count } = await query
-
   const totalPages = Math.ceil((count ?? 0) / PRODUCTS_PER_PAGE)
 
   return (
     <div className="container-shop py-10">
-      {/* Page heading */}
       <div className="mb-8">
-        <h1 className="font-display text-3xl font-bold text-[#2D2D2D] md:text-4xl">
+        <h1 className="font-display text-3xl font-light text-[#1E1714] md:text-4xl">
           {category ? category : 'Tất cả sản phẩm'}
         </h1>
         {search && (
-          <p className="mt-2 text-muted">
-            Kết quả tìm kiếm cho: <strong className="text-[#2D2D2D]">"{search}"</strong>
+          <p className="mt-2 text-sm text-[rgba(30,23,20,0.45)]">
+            Kết quả cho: <strong className="text-[#1E1714]">&quot;{search}&quot;</strong>
           </p>
         )}
       </div>
 
       <div className="flex gap-8">
-        {/* Sidebar filters — desktop */}
-        <aside className="hidden w-52 flex-shrink-0 lg:block" aria-label="Bộ lọc sản phẩm">
-          <Suspense>
-            <ProductFilters />
+        <aside className="hidden w-56 flex-shrink-0 lg:block border-r border-[rgba(195,130,120,0.12)] pr-6" aria-label="Bộ lọc sản phẩm">
+          <Suspense fallback={null}>
+            <ProductFilters total={count ?? 0} />
           </Suspense>
         </aside>
 
-        {/* Main content */}
         <div className="flex-1 min-w-0 space-y-6">
-          {/* Toolbar */}
-          <Suspense>
+          <Suspense fallback={null}>
             <ProductToolbar total={count ?? 0} />
           </Suspense>
 
-          {/* Grid */}
           <ProductGrid products={(products ?? []) as Product[]} />
 
-          {/* Pagination */}
           <div className="pt-4">
-            <Suspense>
+            <Suspense fallback={null}>
               <Pagination currentPage={page} totalPages={totalPages} />
             </Suspense>
           </div>

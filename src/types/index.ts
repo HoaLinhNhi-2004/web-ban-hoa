@@ -42,6 +42,7 @@ export type Order = {
   shipping_address  : string
   phone             : string
   note              : string | null
+  internal_note     : string | null
   stripe_payment_id : string | null
   created_at        : string
 }
@@ -90,4 +91,73 @@ export type CheckoutFormData = {
 export type ApiResponse<T> = {
   data  : T | null
   error : string | null
+}
+
+// ─────────────────────────────────────────────
+// Chat
+// ─────────────────────────────────────────────
+export type Conversation = {
+  id              : string
+  user_id         : string
+  user_name       : string | null
+  user_email      : string | null
+  status          : 'open' | 'closed'
+  last_message    : string | null
+  last_message_at : string
+  created_at      : string
+}
+
+export type Message = {
+  id              : string
+  conversation_id : string
+  sender_id       : string | null
+  sender_role     : 'user' | 'admin'
+  content         : string
+  is_read         : boolean
+  created_at      : string
+}
+
+// ─────────────────────────────────────────────
+// Promo / Shipping
+// ─────────────────────────────────────────────
+export type PromoCode = {
+  id         : string
+  code       : string
+  type       : 'percent' | 'fixed'
+  value      : number
+  min_order  : number
+  max_uses   : number | null
+  used_count : number
+  is_active  : boolean
+  expires_at : string | null
+  created_at : string
+}
+
+export type ShippingZone = {
+  id        : string
+  name      : string
+  keywords  : string[]
+  fee       : number
+  is_active : boolean
+  sort_order: number
+}
+
+// ─────────────────────────────────────────────
+// Banner
+// ─────────────────────────────────────────────
+export type Banner = {
+  id        : string
+  eyebrow   : string
+  title     : string
+  title_em  : string
+  sub       : string | null
+  badge     : string | null
+  cta_label : string
+  cta_href  : string
+  emoji     : string | null
+  bg_from   : string
+  bg_to     : string
+  is_active : boolean
+  sort_order: number
+  created_at: string
 }

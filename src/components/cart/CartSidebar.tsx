@@ -71,6 +71,7 @@ const CartSidebar: FC = () => {
             ref={closeRef}
             onClick={close}
             aria-label="Đóng giỏ hàng"
+            suppressHydrationWarning
             className="flex h-9 w-9 items-center justify-center rounded-full hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <X className="h-5 w-5" />
@@ -88,7 +89,7 @@ const CartSidebar: FC = () => {
                 <p className="font-semibold text-text">Giỏ hàng trống</p>
                 <p className="mt-1 text-sm text-muted">Hãy thêm vài bông hoa nhé!</p>
               </div>
-              <button onClick={close} className="btn-primary mt-2">
+              <button onClick={close} suppressHydrationWarning className="btn-primary mt-2">
                 Tiếp tục mua sắm
               </button>
             </div>

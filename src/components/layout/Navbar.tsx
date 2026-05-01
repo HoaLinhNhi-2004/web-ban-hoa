@@ -3,10 +3,11 @@
 import { type FC, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ShoppingBag, Menu, X, Flower2 } from 'lucide-react'
+import { ShoppingBag, Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCartStore } from '@/store/cartStore'
 import { useCartSidebar } from '@/store/cartSidebarStore'
+import { useAdminRole } from '@/hooks/useAdminRole'
 
 const NAV_LINKS = [
   { href: '/',         label: 'Trang chủ' },
@@ -15,55 +16,73 @@ const NAV_LINKS = [
 ]
 
 const Navbar: FC = () => {
-  const pathname  = usePathname()
+  const pathname     = usePathname()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const items     = useCartStore(state => state.items)
-  const cartCount = items.reduce((sum, i) => sum + i.quantity, 0)
-  const { open }  = useCartSidebar()
+  const items        = useCartStore(state => state.items)
+  const cartCount    = items.reduce((sum, i) => sum + i.quantity, 0)
+  const { open }     = useCartSidebar()
+  const { isAdmin }  = useAdminRole()
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-surface/90 backdrop-blur-sm shadow-nav">
+    <header className="sticky top-0 z-50 w-full border-b border-[rgba(195,130,120,0.18)] bg-[#FAF8F5]/95 backdrop-blur-sm">
       <div className="container-shop flex h-16 items-center justify-between">
 
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A85448]"
         >
-          <Flower2 className="h-6 w-6 text-primary" />
-          <span className="font-display text-xl font-bold text-primary">
+          <span className="font-display text-[22px] font-light tracking-[7px] uppercase text-[#A85448]">
             Flower Shop
           </span>
         </Link>
 
-        {/* Desktop menu */}
-        <nav aria-label="Menu chính" className="hidden md:flex items-center gap-8">
+        {/* Desktop nav */}
+        <nav aria-label="Menu chính" className="hidden items-center gap-10 md:flex">
           {NAV_LINKS.map(link => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                'text-sm font-medium transition-colors hover:text-primary',
-                pathname === link.href ? 'text-primary' : 'text-muted'
+                'font-sans text-[10px] tracking-[3px] uppercase transition-colors',
+                pathname === link.href
+                  ? 'text-[#A85448]'
+                  : 'text-[rgba(30,23,20,0.4)] hover:text-[#A85448]'
               )}
             >
               {link.label}
             </Link>
           ))}
+
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className={cn(
+                'flex items-center gap-1.5 font-sans text-[10px] tracking-[3px] uppercase transition-colors hover:text-[#A85448]',
+                pathname.startsWith('/admin')
+                  ? 'text-[#A85448]'
+                  : 'text-[rgba(30,23,20,0.4)]'
+              )}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-[#A85448]" aria-hidden="true" />
+              Admin
+            </Link>
+          )}
         </nav>
 
         {/* Right actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
 
-          {/* Cart button — mở CartSidebar */}
+          {/* Cart */}
           <button
             onClick={open}
             aria-label={`Mở giỏ hàng${cartCount > 0 ? `, ${cartCount} sản phẩm` : ''}`}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            suppressHydrationWarning
+            className="relative flex h-9 w-9 items-center justify-center border border-[rgba(168,84,72,0.3)] text-[#A85448] transition-colors hover:bg-[rgba(168,84,72,0.06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A85448]"
           >
-            <ShoppingBag className="h-5 w-5 text-text" />
+            <ShoppingBag className="h-4 w-4" />
             {cartCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center bg-[#A85448] font-sans text-[9px] font-medium text-[#FAF8F5]">
                 {cartCount > 99 ? '99+' : cartCount}
               </span>
             )}
@@ -74,12 +93,10 @@ const Navbar: FC = () => {
             onClick={() => setIsMenuOpen(prev => !prev)}
             aria-label={isMenuOpen ? 'Đóng menu' : 'Mở menu'}
             aria-expanded={isMenuOpen}
-            className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-secondary transition-colors md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            suppressHydrationWarning
+            className="flex h-9 w-9 items-center justify-center border border-[rgba(168,84,72,0.3)] text-[#A85448] transition-colors hover:bg-[rgba(168,84,72,0.06)] md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A85448]"
           >
-            {isMenuOpen
-              ? <X className="h-5 w-5" />
-              : <Menu className="h-5 w-5" />
-            }
+            {isMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
         </div>
       </div>
@@ -88,25 +105,43 @@ const Navbar: FC = () => {
       {isMenuOpen && (
         <nav
           aria-label="Menu mobile"
-          className="border-t border-border bg-surface px-4 py-4 md:hidden"
+          className="border-t border-[rgba(195,130,120,0.18)] bg-[#FAF8F5] px-4 py-3 md:hidden"
         >
-          <ul className="flex flex-col gap-1">
+          <ul className="flex flex-col">
             {NAV_LINKS.map(link => (
               <li key={link.href}>
                 <Link
                   href={link.href}
                   onClick={() => setIsMenuOpen(false)}
                   className={cn(
-                    'block rounded-lg px-4 py-2.5 text-sm font-medium transition-colors hover:bg-secondary hover:text-primary',
+                    'block px-4 py-3 font-sans text-[10px] tracking-[3px] uppercase transition-colors hover:text-[#A85448]',
                     pathname === link.href
-                      ? 'bg-secondary text-primary'
-                      : 'text-text'
+                      ? 'text-[#A85448]'
+                      : 'text-[rgba(30,23,20,0.4)]'
                   )}
                 >
                   {link.label}
                 </Link>
               </li>
             ))}
+
+            {isAdmin && (
+              <li>
+                <Link
+                  href="/admin"
+                  onClick={() => setIsMenuOpen(false)}
+                  className={cn(
+                    'flex items-center gap-2 px-4 py-3 font-sans text-[10px] tracking-[3px] uppercase transition-colors hover:text-[#A85448]',
+                    pathname.startsWith('/admin')
+                      ? 'text-[#A85448]'
+                      : 'text-[rgba(30,23,20,0.4)]'
+                  )}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#A85448]" aria-hidden="true" />
+                  Quản trị Admin
+                </Link>
+              </li>
+            )}
           </ul>
         </nav>
       )}

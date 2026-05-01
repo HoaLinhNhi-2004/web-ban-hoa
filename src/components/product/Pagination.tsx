@@ -1,6 +1,6 @@
 'use client'
 
-import { type FC } from 'react'
+import { type FC, useTransition } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -14,13 +14,14 @@ const Pagination: FC<PaginationProps> = ({ currentPage, totalPages }) => {
   const router       = useRouter()
   const pathname     = usePathname()
   const searchParams = useSearchParams()
+  const [isPending, startTransition] = useTransition()
 
   if (totalPages <= 1) return null
 
   const goToPage = (page: number) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('page', String(page))
-    router.push(`${pathname}?${params.toString()}`)
+    startTransition(() => router.replace(`${pathname}?${params.toString()}`))
   }
 
   // Tạo danh sách số trang hiển thị
@@ -40,12 +41,13 @@ const Pagination: FC<PaginationProps> = ({ currentPage, totalPages }) => {
   }
 
   return (
-    <nav aria-label="Phân trang" className="flex items-center justify-center gap-1">
+    <nav aria-label="Phân trang" className={cn('flex items-center justify-center gap-1 transition-opacity', isPending && 'pointer-events-none opacity-50')}>
       {/* Prev */}
       <button
         onClick={() => goToPage(currentPage - 1)}
         disabled={currentPage <= 1}
         aria-label="Trang trước"
+        suppressHydrationWarning
         className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
       >
         <ChevronLeft className="h-4 w-4" />
@@ -63,6 +65,7 @@ const Pagination: FC<PaginationProps> = ({ currentPage, totalPages }) => {
             onClick={() => goToPage(page)}
             aria-label={`Trang ${page}`}
             aria-current={currentPage === page ? 'page' : undefined}
+            suppressHydrationWarning
             className={cn(
               'flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition-colors',
               currentPage === page
@@ -80,6 +83,7 @@ const Pagination: FC<PaginationProps> = ({ currentPage, totalPages }) => {
         onClick={() => goToPage(currentPage + 1)}
         disabled={currentPage >= totalPages}
         aria-label="Trang sau"
+        suppressHydrationWarning
         className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
       >
         <ChevronRight className="h-4 w-4" />
