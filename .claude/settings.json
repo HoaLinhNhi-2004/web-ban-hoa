@@ -10,5 +10,19 @@
       "Bash(rm -rf *)",
       "Bash(git push --force*)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "command": "powershell -File .claude/hooks/dangerous-actions-blocker.ps1"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "command": "powershell -File .claude/hooks/output-secrets-scanner.ps1"
+      }
+    ]
   }
 }
