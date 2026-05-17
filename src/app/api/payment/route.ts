@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe-server'
+import { getStripe } from '@/lib/stripe-server'
 import { createSupabaseServer } from '@/lib/supabase-server'
 
 export async function POST(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Số tiền không hợp lệ' }, { status: 400 })
   }
 
-  const paymentIntent = await stripe.paymentIntents.create({
+  const paymentIntent = await getStripe().paymentIntents.create({
     amount  : Math.round(amount), // VND, không nhân 100
     currency: 'vnd',
     metadata: { user_id: session.user.id },
