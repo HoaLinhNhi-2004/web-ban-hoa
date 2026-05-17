@@ -13,15 +13,19 @@ const CheckoutPage: FC = () => {
   const items         = useCartStore(state => state.items)
   const total         = useCartStore(state => state.total)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [isMounted,    setIsMounted]    = useState(false)
+
+  // Chờ Zustand rehydrate từ localStorage trước khi check giỏ hàng
+  useEffect(() => { setIsMounted(true) }, [])
 
   const subtotal    = total()
   const shippingFee = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE
   const grandTotal  = subtotal + shippingFee
 
-  // Redirect nếu giỏ trống
+  // Redirect nếu giỏ trống — chỉ sau khi đã mount
   useEffect(() => {
-    if (items.length === 0) router.push('/cart')
-  }, [items, router])
+    if (isMounted && items.length === 0) router.push('/cart')
+  }, [isMounted, items, router])
 
   // Tạo Payment Intent cho Stripe
   useEffect(() => {
@@ -36,7 +40,7 @@ const CheckoutPage: FC = () => {
       .catch(() => setClientSecret(null))
   }, [grandTotal])
 
-  if (items.length === 0) return null
+  if (!isMounted || items.length === 0) return null
 
   return (
     <div className="container-shop py-10">
